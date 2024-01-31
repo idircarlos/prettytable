@@ -15,7 +15,8 @@
 #define TABLE_EDGE '+'
 #define TABLE_HORZ '-'
 #define TABLE_VERT '|'
-#define CARRIAGE_RETURN_UP "\x1B[1A"
+
+#define IS_ODD(n) n % 2 != 0
 
 typedef struct Entry {
     char *value;
@@ -44,6 +45,12 @@ typedef struct Table {
     Rows *rows;
 } Table;
 
+typedef enum {
+    ALIGN_LEFT = 0,
+    ALIGN_RIGHT = 1,
+    ALIGN_CENTER = 2,
+} AlignOption;
+
 PRETTYTABLEAPI Table *InitTable();
 PRETTYTABLEAPI void FreeTable(Table *table);
 PRETTYTABLEAPI size_t TableSize(Table *table);
@@ -53,8 +60,11 @@ PRETTYTABLEAPI Entry TableGetEntry(Table *table, size_t header_index, int value_
 PRETTYTABLEAPI int AppendHeader(Table *table, const char* header);
 PRETTYTABLEAPI int AppendRow(Table *table, char **rows);
 PRETTYTABLEAPI void PrintTable(Table *table);
+PRETTYTABLEAPI void PrintTableA(Table *table, AlignOption align);
 PRETTYTABLEAPI void PrintHeaders(Table *table);
+PRETTYTABLEAPI void PrintHeadersA(Table *table, AlignOption align);
 PRETTYTABLEAPI void PrintRows(Table *table);
+PRETTYTABLEAPI void PrintRowsA(Table *table, AlignOption align);
 
 #endif // PRETTYTABLE_H_
 
@@ -66,9 +76,10 @@ PRETTYTABLEAPI void PrintRows(Table *table);
 
 static Headers *_InitHeaders();
 static Rows *_InitRows();
+char *_GenerateBlankString(int strlen);
 static void _PrintHorizontalLine(Table *table, size_t *row_lengths);
-static void _PrintHeadersLine(Table *table, size_t *row_lengths);
-static void _PrintEntriesLine(Table *table, size_t *row_lengths, int row);
+static void _PrintHeadersLine(Table *table, size_t *row_lengths, AlignOption align);
+static void _PrintEntriesLine(Table *table, size_t *row_lengths, int row, AlignOption align);
 
 Table *InitTable() {
     Table *table = (Table*)malloc(sizeof(Table));
@@ -152,16 +163,15 @@ Entry TableGetHeader(Table *table, size_t header_index) {
     return table->headers->headers[header_index];
 }
 
-char *GenerateBlankString(int strlen) {
-    char *str = (char*)malloc(strlen + 1);
-    for (size_t i = 0; i < strlen; i++) {
-        str[i] = ' ';
-    }
-    str[strlen] = '\0';
-    return str;
+void PrintTable(Table *table) {
+    PrintTableA(table, ALIGN_LEFT);
 }
 
-void PrintTable(Table *table) {
+PRETTYTABLEAPI void PrintTableA(Table *table, AlignOption align) {
+    if (align > ALIGN_CENTER) {
+        fprintf(stderr, "Invalid Align Option %d\n", align);
+        return;
+    }
     // Calculate max lengths of every row and header
     size_t table_size = TableSize(table);
     size_t row_lengths[table_size + 1]; // Header + Rows
@@ -178,29 +188,45 @@ void PrintTable(Table *table) {
 
     // ---------------------DRAW HEADERS---------------------
     _PrintHorizontalLine(table, row_lengths);
-    _PrintHeadersLine(table, row_lengths);
+    _PrintHeadersLine(table, row_lengths, align);
     _PrintHorizontalLine(table, row_lengths);
     
     // ---------------------DRAW ROWS---------------------
     for (size_t r = 0; r < TableSize(table); r++) {
-        _PrintEntriesLine(table, row_lengths, r);
+        _PrintEntriesLine(table, row_lengths, r, align);
     }
     _PrintHorizontalLine(table, row_lengths);
 }
 
 void PrintHeaders(Table *table) {
+    PrintHeadersA(table, ALIGN_LEFT);
+}
+
+void PrintHeadersA(Table *table, AlignOption align) {
+    if (align > ALIGN_CENTER) {
+        fprintf(stderr, "Invalid Align Option %d\n", align);
+        return;
+    }
     size_t table_size = TableSize(table);
     size_t row_lengths[table_size + 1]; // Header + Rows
     for (size_t i = 0; i < TableCols(table); i++) {
         row_lengths[i] = strlen(TableGetHeader(table, i).value); // If header is bigger than some row, put it as max len
     }
     _PrintHorizontalLine(table, row_lengths);
-    _PrintHeadersLine(table, row_lengths);
+    _PrintHeadersLine(table, row_lengths, align);
     // Draw second horizontal line with edges (bottom horizontal line of headers)
     _PrintHorizontalLine(table, row_lengths);
 }
 
 void PrintRows(Table *table) {
+    PrintRowsA(table, ALIGN_LEFT);
+}
+
+void PrintRowsA(Table *table, AlignOption align) {
+    if (align > ALIGN_CENTER) {
+        fprintf(stderr, "Invalid Align Option %d\n", align);
+        return;
+    }
     // Calculate max lengths of every row and header
     size_t table_size = TableSize(table);
     size_t row_lengths[table_size + 1]; // Header + Rows
@@ -216,7 +242,7 @@ void PrintRows(Table *table) {
     _PrintHorizontalLine(table, row_lengths);
     // Draw rows with blank string to accomodate them
     for (size_t r = 0; r < TableSize(table); r++) {
-         _PrintEntriesLine(table, row_lengths, r);
+         _PrintEntriesLine(table, row_lengths, r, align);
     }
     _PrintHorizontalLine(table, row_lengths);
 }
@@ -241,6 +267,15 @@ Rows *_InitRows() {
     return rows;
 }
 
+char *_GenerateBlankString(int strlen) {
+    char *str = (char*)malloc(strlen + 1);
+    for (size_t i = 0; i < strlen; i++) {
+        str[i] = ' ';
+    }
+    str[strlen] = '\0';
+    return str;
+}
+
 static void _PrintHorizontalLine(Table *table, size_t *row_lengths) {
     // Draw first horizontal line with edges (top horizontal line of table/headers)
     for (size_t i = 0; i < TableCols(table); i++) {
@@ -253,19 +288,37 @@ static void _PrintHorizontalLine(Table *table, size_t *row_lengths) {
     printf("%c\n", TABLE_EDGE);
 }
 
-static void _PrintHeadersLine(Table *table, size_t *row_lengths) {
-    _PrintEntriesLine(table, row_lengths, -1);
+static void _PrintHeadersLine(Table *table, size_t *row_lengths, AlignOption align) {
+    _PrintEntriesLine(table, row_lengths, -1, align);
 }
 
-static void _PrintEntriesLine(Table *table, size_t *row_lengths, int row) {
+static void _PrintEntriesLine(Table *table, size_t *row_lengths, int row, AlignOption align) {
     printf("%c", TABLE_VERT);
     // Draw headers with blank string to accomodate them
     for (size_t i = 0; i < TableCols(table); i++) {
         char *value = TableGetEntry(table, i, row).value;
         size_t strlen_value = strlen(value);
-        char *blanks_string = GenerateBlankString(row_lengths[i] - strlen_value); 
-        printf(" %s%s %c", value, blanks_string, TABLE_VERT);
-        free(blanks_string);
+        char *blanks_string_1;
+        char *blanks_string_2;
+        if (align == ALIGN_LEFT) {
+            blanks_string_1 = _GenerateBlankString(row_lengths[i] - strlen_value);
+            printf(" %s%s %c", value, blanks_string_1, TABLE_VERT);
+        }
+        else if (align == ALIGN_RIGHT) {
+            blanks_string_1 = _GenerateBlankString(row_lengths[i] - strlen_value);
+            printf(" %s%s %c", blanks_string_1, value, TABLE_VERT);
+        }
+        else if (align == ALIGN_CENTER) {
+            int blanks = (row_lengths[i] - strlen_value);
+            int left_blanks = blanks/2;
+            int right_blanks = left_blanks;
+            if (IS_ODD(blanks)) left_blanks++;
+            blanks_string_1 = _GenerateBlankString(left_blanks);
+            blanks_string_2 = _GenerateBlankString(right_blanks);
+            printf(" %s%s%s %c", blanks_string_1, value, blanks_string_2, TABLE_VERT);
+            free(blanks_string_2);
+        }
+        free(blanks_string_1);
     }
     printf("\n");
 }

@@ -12,12 +12,12 @@
 
 2. **Dynamic Sizing:** Tables dynamically adjust column widths based on content, ensuring a clean and visually pleasing layout.
 
+3. **Customizable:** Adjust the appearance of your table by modifying formatting options such as alignment (colors soon!).
+
 
 ### Next features:
 
- 1. **Customizable:** Adjust the appearance of your table by modifying formatting options such as alignment and colors.
-
- 2. **Different Data Types:** Tables can store all primitive C types, and the library will handle their display appropriately.
+ 1. **Different Data Types:** Tables can store all primitive C types, and the library will handle their display appropriately.
 
 ## Getting Started with prettytable
 
