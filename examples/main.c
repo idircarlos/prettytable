@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
     AppendRow(table, row5);
 
     // Print the table
-    PrintTableA(table, ALIGN_CENTER);
+    PrintTable(table);
 
     // Be a good boy and free the table :)
     FreeTable(table);

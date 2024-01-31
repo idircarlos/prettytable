@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
     char *row3[3] = {"Australia", "Canberra", "Oceania"};
     char *row4[3] = {"Brazil", "Brasilia", "South America"};
     char *row5[3] = {"Japan", "Tokyo", "Asia"};
-
+    
     // Append rows
     AppendRow(table, row1);
     AppendRow(table, row2);
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
     // Print the table
     PrintTable(table);
 
-    // Free the table memory
+    // Be a good boy and free the table :)
     FreeTable(table);
 
     return 0;
