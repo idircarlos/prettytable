@@ -10,14 +10,11 @@
 
 1. **Simple API:** With just a few function calls, you can create, populate, and print tables effortlessly.
 
-2. **Dynamic Sizing:** Tables dynamically adjust column widths based on content, ensuring a clean and visually pleasing layout.
+2. **Different Data Types:** Tables can store all primitive C types, and the library will handle their display appropriately.
 
-3. **Customizable:** Adjust the appearance of your table by modifying formatting options such as alignment (colors soon!).
+3. **Dynamic Sizing:** Tables dynamically adjust column widths based on content, ensuring a clean and visually pleasing layout.
 
-
-### Next features:
-
- 1. **Different Data Types:** Tables can store all primitive C types, and the library will handle their display appropriately.
+4. **Customizable:** Adjust the appearance of your table by modifying formatting options such as alignment.
 
 ## Getting Started with prettytable
 
